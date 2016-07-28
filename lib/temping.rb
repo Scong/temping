@@ -5,8 +5,8 @@ class Temping
   @model_klasses = []
 
   class << self
-    def create(model_name, options = {}, &block)
-      factory = ModelFactory.new(model_name.to_s.classify, options, &block)
+    def create(model_name, options = {}, parent: nil, &block)
+      factory = ModelFactory.new(model_name.to_s.classify, parent, options, &block)
       klass = factory.klass
       @model_klasses << klass
       klass
@@ -31,9 +31,11 @@ class Temping
   end
 
   class ModelFactory
-    def initialize(model_name, options = {}, &block)
+    attr_reader :parent
+    def initialize(model_name, parent, options = {}, &block)
       @model_name = model_name
       @options = options
+      @parent = parent || model_parent_class
       klass.class_eval(&block) if block_given?
       klass.reset_column_information
     end
@@ -47,7 +49,7 @@ class Temping
     private
 
     def build
-      Class.new(model_parent_class).tap do |klass|
+      Class.new(parent).tap do |klass|
         Object.const_set(@model_name, klass)
 
         klass.primary_key = :id
